@@ -17,9 +17,7 @@ exports.listarObras = async (req, res) => {
     const obras = await Obra.find().sort({ createdAt: -1 });
     res.json(obras);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Erro ao listar obras", error: error.message });
+    res.status(500).json({ message: "Erro ao listar obras", error: error.message });
   }
 };
 
@@ -32,9 +30,7 @@ exports.buscarObra = async (req, res) => {
     }
     res.json(obra);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Erro ao buscar obra", error: error.message });
+    res.status(500).json({ message: "Erro ao buscar obra", error: error.message });
   }
 };
 
@@ -45,9 +41,7 @@ exports.criarObra = async (req, res) => {
     await obra.save();
     res.status(201).json(obra);
   } catch (error) {
-    res
-      .status(400)
-      .json({ message: "Erro ao criar obra", error: error.message });
+    res.status(400).json({ message: "Erro ao criar obra", error: error.message });
   }
 };
 
@@ -63,9 +57,7 @@ exports.atualizarObra = async (req, res) => {
     }
     res.json(obra);
   } catch (error) {
-    res
-      .status(400)
-      .json({ message: "Erro ao atualizar obra", error: error.message });
+    res.status(400).json({ message: "Erro ao atualizar obra", error: error.message });
   }
 };
 
@@ -78,15 +70,20 @@ exports.deletarObra = async (req, res) => {
     }
     res.json({ message: "Obra deletada com sucesso" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Erro ao deletar obra", error: error.message });
+    res.status(500).json({ message: "Erro ao deletar obra", error: error.message });
   }
 };
 
 // Enviar detalhes da obra por e-mail
 exports.enviarDetalhesPorEmail = async (req, res) => {
   try {
+    const { email } = req.body;
+    console.log("Email recebido do front-end:", email); // ✅ debug
+
+    if (!email) {
+      return res.status(400).json({ message: "E-mail é obrigatório" });
+    }
+
     const obra = await Obra.findById(req.params.id);
     if (!obra) {
       return res.status(404).json({ message: "Obra não encontrada" });
@@ -94,26 +91,24 @@ exports.enviarDetalhesPorEmail = async (req, res) => {
 
     const mailOptions = {
       from: process.env.SMTP_USER,
-      to: req.body.email,
+      to: email,
       subject: `Detalhes da Obra: ${obra.nome}`,
       html: `
         <h1>Detalhes da Obra</h1>
         <p><strong>Nome:</strong> ${obra.nome}</p>
         <p><strong>Responsável:</strong> ${obra.responsavel}</p>
-        <p><strong>Data de Início:</strong> ${obra.data_inicio.toLocaleDateString()}</p>
-        <p><strong>Data de Fim:</strong> ${obra.data_fim.toLocaleDateString()}</p>
+        <p><strong>Data de Início:</strong> ${new Date(obra.data_inicio).toLocaleDateString()}</p>
+        <p><strong>Data de Fim:</strong> ${new Date(obra.data_fim).toLocaleDateString()}</p>
         <p><strong>Descrição:</strong> ${obra.descricao}</p>
-        <p><strong>Localização:</strong> ${obra.localizacao.latitude}, ${
-        obra.localizacao.longitude
-      }</p>
+        <p><strong>Localização:</strong> ${obra.localizacao.latitude}, ${obra.localizacao.longitude}</p>
       `,
     };
 
     await transporter.sendMail(mailOptions);
     res.json({ message: "E-mail enviado com sucesso" });
+
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Erro ao enviar e-mail", error: error.message });
+    console.error("Erro ao enviar e-mail:", error); // ✅ log completo do erro
+    res.status(500).json({ message: "Erro ao enviar e-mail", error: error.message });
   }
 };
